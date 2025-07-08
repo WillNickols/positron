@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      // Dev commands
+      "Bash(nox -s lint)",
+      "Bash(nox -s lint_fix)",
+      "Bash(nox -s test -- --verbosity=-1)",
+      "Bash(nox -s test -- positron/tests/[a-zA-Z0-9_/]+\\.py) --verbosity=-1",
+      "Bash(nox -s test -- positron/tests/[a-zA-Z0-9_/]+\\.py::[a-zA-Z0-9_]+) --verbosity=-1"
+      // Other
+    ],
+    "deny": [
+    ]
+  }
+}
