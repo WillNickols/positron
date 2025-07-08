@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import ANY, Mock
 
@@ -148,6 +149,46 @@ def test_update_assigned_mutable(
 
     for value_code in value_codes[1:]:
         _assert_assigned(shell, value_code, varname, variables_comm, "unevaluated")
+
+
+def test_change_detection_run_cell_performance(shell: PositronShell, variables_comm) -> None:
+    """Test that change detection hooks do not cause unreasonable performance overhead.
+
+    This test reproduces https://github.com/posit-dev/positron/issues/8245
+    where large objects cause the console to become slow due to expensive
+    variable pane updates after each code execution.
+    """
+    # We only use the variables_comm fixture to set up the comm
+    assert variables_comm is not None
+
+    # First, measure baseline performance without large objects
+    start_ns = time.perf_counter_ns()
+    shell.run_cell("1+1").raise_error()
+    baseline_ns = time.perf_counter_ns() - start_ns
+
+    # Create a large list similar to the reproduction case
+    shell.run_cell("""
+sample_dict = {"a": 1, "b": "hello world", "c": 3.14}
+large_list = [sample_dict for _ in range(1_000_000)]
+""").raise_error()
+
+    # Now measure performance with large object in namespace
+    start_ns = time.perf_counter_ns()
+    shell.run_cell("1+1").raise_error()
+    large_object_ns = time.perf_counter_ns() - start_ns
+
+    # The execution time should not increase dramatically
+    # Allow for some overhead, but it shouldn't be more than 10x slower
+    slowdown_factor = large_object_ns / baseline_ns
+    assert slowdown_factor < 10, (
+        f"Console became {slowdown_factor:.1f}x slower with large object "
+        f"(baseline: {1e6 * baseline_ns:.3f}s, with large object: {1e6 * large_object_ns:.3f}s)"
+    )
+
+    # Also check absolute time - should complete within 1 second
+    assert large_object_ns < 1e6, (
+        f"Simple cell execution took {1e6 * large_object_ns:.2f}s with large object in namespace"
+    )
 
 
 @pytest.mark.parametrize("varname", ["x", "_"])
