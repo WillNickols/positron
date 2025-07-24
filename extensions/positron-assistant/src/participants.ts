@@ -63,7 +63,6 @@ export class ParticipantService implements vscode.Disposable {
 		);
 		vscodeParticipant.iconPath = participant.iconPath;
 		vscodeParticipant.followupProvider = participant.followupProvider;
-		vscodeParticipant.welcomeMessageProvider = participant.welcomeMessageProvider;
 	}
 
 	getRequestData(chatRequestId: string): ChatRequestData | undefined {
@@ -151,16 +150,6 @@ abstract class PositronAssistantParticipant implements IPositronAssistantPartici
 		}
 	};
 
-	readonly welcomeMessageProvider = {
-		async provideSampleQuestions(location: vscode.ChatLocation, token: vscode.CancellationToken): Promise<vscode.ChatFollowup[]> {
-			return [{
-				label: vscode.l10n.t('Positron Assistant'),
-				participant: ParticipantID.Chat,
-				prompt: 'Analyze the data in my workspace and visualize your key findings',
-			}];
-		}
-	};
-
 	async requestHandler(
 		request: vscode.ChatRequest,
 		context: vscode.ChatContext,
@@ -199,19 +188,25 @@ abstract class PositronAssistantParticipant implements IPositronAssistantPartici
 		const positronContext = await positron.ai.getPositronChatContext(request);
 		log.debug(`[context] Positron context for request ${request.id}:\n${JSON.stringify(positronContext, null, 2)}`);
 
-		// Build a list of languages for which we have active sessions.
-		//
 		// See IChatRuntimeSessionContext for the structure of the active
 		// session context objects
 		const activeSessions: Set<string> = new Set();
+		let hasVariables = false;
 		let hasConsoleSessions = false;
 		for (const reference of request.references) {
 			const value = reference.value as any;
+
+			// Build a list of languages for which we have active sessions.
 			if (value.activeSession) {
 				activeSessions.add(value.activeSession.languageId);
 				if (value.activeSession.mode === positron.LanguageRuntimeSessionMode.Console) {
 					hasConsoleSessions = true;
 				}
+			}
+
+			// Check if there are variables defined in the session.
+			if (value.variables && value.variables.length > 0) {
+				hasVariables = true;
 			}
 		}
 
@@ -285,9 +280,16 @@ abstract class PositronAssistantParticipant implements IPositronAssistantPartici
 						return inChatPane && (isEditMode || isAgentMode);
 					// Only include the getTableSummary tool for Python sessions until supported in R
 					case PositronAssistantToolName.GetTableSummary:
-						// TODO: Remove this restriction when the tool is supported in R https://github.com/posit-dev/positron/issues/8343
+						// TODO: Remove the python-specific restriction when the tool is supported in R https://github.com/posit-dev/positron/issues/8343
 						// The logic above with TOOL_TAG_REQUIRES_ACTIVE_SESSION will handle checking for active sessions once this is removed.
-						return activeSessions.has('python');
+						// We'll still want to check that variables are defined.
+						return activeSessions.has('python') && hasVariables;
+					// Only include the getPlot tool if there is a plot available.
+					case PositronAssistantToolName.GetPlot:
+						return positronContext.plots?.hasPlots === true;
+					// Only include the inspectVariables tool if there are variables defined.
+					case PositronAssistantToolName.InspectVariables:
+						return hasVariables;
 					// Otherwise, include the tool if it is tagged for use with Positron Assistant.
 					// Allow all tools in Agent mode.
 					default:
@@ -386,8 +388,14 @@ abstract class PositronAssistantParticipant implements IPositronAssistantPartici
 				if (value.activeSession) {
 					// The user attached a runtime session - usually the active session in the IDE.
 					const sessionSummary = JSON.stringify(value.activeSession, null, 2);
-					sessionPrompts.push(xml.node('session', sessionSummary));
-					log.debug(`[context] adding session context for session ${value.activeSession.identifier}: ${sessionSummary.length} characters`);
+					let sessionContent = sessionSummary;
+					if (value.variables) {
+						// Include the session variables in the session content.
+						const variablesSummary = JSON.stringify(value.variables, null, 2);
+						sessionContent += '\n' + xml.node('variables', variablesSummary);
+					}
+					sessionPrompts.push(xml.node('session', sessionContent));
+					log.debug(`[context] adding session context for session ${value.activeSession.identifier}: ${sessionContent.length} characters`);
 				} else if (value instanceof vscode.Location) {
 					// The user attached a range of a file -
 					// usually the automatically attached visible region of the active file.
