@@ -232,7 +232,7 @@ export const DataExplorer = () => {
 		return () => disposableStore.dispose();
 	}, [columnsCollapsed, services.accessibilityService, context.instance]);
 
-	// Automatic layout useEffect.
+	// Automatic layout useLayoutEffect.
 	useLayoutEffect(() => {
 		// Set the initial width.
 		setWidth(dataExplorerRef.current.offsetWidth);
