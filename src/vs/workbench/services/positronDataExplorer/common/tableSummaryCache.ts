@@ -70,6 +70,19 @@ export class TableSummaryCache extends Disposable {
 	private _rows = 0;
 
 	/**
+	 * An array that maps display row index to original column index.
+	 * This array is always populated and serves as the single source of truth for display ordering.
+	 *
+	 * For normal (non-search) display: [0, 1, 2, 3, 4, ...] (sequential mapping)
+	 * For search results: [0, 5, 12, 25, ...] (sparse mapping based on search results)
+	 * For sorted results: [3, 1, 4, 0, 2, ...] (custom ordering based on sort criteria)
+	 *
+	 * _renderOrder[0] = 5 means the first row in the grid should display data
+	 * for the 6th column (index 5) in the original dataset.
+	 */
+	private _renderOrder: number[] = [];
+
+	/**
 	 * The expanded columns set is used to track which columns are expanded
 	 * in the summary data grid. This allows the data grid to only fetch
 	 * the summary data for columns as they are expanded to avoid
@@ -162,34 +175,41 @@ export class TableSummaryCache extends Disposable {
 	//#region Public Methods
 
 	/**
-	 * Returns a value which indicates whether the specified column index is expanded.
-	 * @param columnIndex The columm index.
-	 * @returns A value which indicates whether the specified column index is expanded.
+	 * Returns a value which indicates whether the specified column is expanded.
+	 * @param displayIndex The display position index for the column.
+	 * @returns A value which indicates whether the specified column is expanded.
 	 */
-	isColumnExpanded(columnIndex: number) {
-		return this._expandedColumns.has(columnIndex);
+	isColumnExpanded(displayIndex: number) {
+		const originalIndex = this._renderOrder[displayIndex];
+		return originalIndex !== undefined ? this._expandedColumns.has(originalIndex) : false;
 	}
 
 	/**
-	 * Toggles the expanded state of the specified column index.
-	 * @param columnIndex The columm index.
+	 * Toggles the expanded state of the specified column.
+	 * @param displayIndex The display position index for the column.
 	 */
-	async toggleExpandColumn(columnIndex: number) {
-		// If the column is expanded, collpase it, fire the onDidUpdate event, and return.
-		if (this._expandedColumns.has(columnIndex)) {
-			this._expandedColumns.delete(columnIndex);
+	async toggleExpandColumn(displayIndex: number) {
+		const originalIndex = this._renderOrder[displayIndex];
+
+		if (originalIndex === undefined) {
+			return;
+		}
+
+		// If the column is expanded, collapse it, fire the onDidUpdate event, and return.
+		if (this._expandedColumns.has(originalIndex)) {
+			this._expandedColumns.delete(originalIndex);
 			this._onDidUpdateEmitter.fire();
 			return;
 		}
 
 		// Expand the column.
-		this._expandedColumns.add(columnIndex);
+		this._expandedColumns.add(originalIndex);
 
 		// Fire the onDidUpdate event.
 		this._onDidUpdateEmitter.fire();
 
 		// Update the column profile cache.
-		await this.updateColumnProfileCache([columnIndex]);
+		await this.updateColumnProfileCache([originalIndex]);
 	}
 
 	/**
@@ -227,11 +247,11 @@ export class TableSummaryCache extends Disposable {
 		if (invalidateCache || searchTextChanged) {
 			this._columnSchemaCache.clear();
 			this._columnProfileCache.clear();
+			this._renderOrder = []; // Clear the render order array
 		}
 
 		// Get the size of the data.
 		const tableState = await this._dataExplorerClientInstance.getBackendState();
-		this._columns = tableState.table_shape.num_columns;
 		this._rows = tableState.table_shape.num_rows;
 
 		const overscanColumns = screenColumns * OVERSCAN_FACTOR;
@@ -262,19 +282,25 @@ export class TableSummaryCache extends Disposable {
 			}
 		}
 
-		// When search text is present, use `searchSchema` to get the columns into the schema cache
-		// When there is no search text, use `getSchema` to get the default order of columns into the cache
-		const tableSchema = this._searchText
-			? await this._dataExplorerClientInstance.searchSchema({
+		if (this._searchText) {
+			// When searching, we need to get the indices of the columns that match the search request
+			const searchResults = await this._dataExplorerClientInstance.searchSchema({
 				searchText: this._searchText,
 				startIndex: columnIndices[0],
 				numColumns: columnIndices[columnIndices.length - 1] - columnIndices[0] + 1
-			})
-			: await this._dataExplorerClientInstance.getSchema(columnIndices);
+			});
 
-		// Cache the column schema that was returned
-		for (let i = 0; i < tableSchema.columns.length; i++) {
-			this._columnSchemaCache.set(columnIndices[i], tableSchema.columns[i]);
+			// Fetch the schema for the columns that match the search request
+			const tableSchema = await this._dataExplorerClientInstance.getSchema(searchResults);
+
+			// Set the number of rows we will be rendering based on the search results
+			// this._columns = tableSchema.matching_columns.length;
+		} else {
+			// the column indices are a direct mapping to the original data indices so we can use them directly
+			const tableSchema = await this._dataExplorerClientInstance.getSchema(columnIndices);
+
+			// When not searching, use the total number of columns from the table state
+			this._columns = tableState.table_shape.num_columns;
 		}
 
 		// Fire the onDidUpdate event.
@@ -325,21 +351,32 @@ export class TableSummaryCache extends Disposable {
 	}
 
 	/**
-	 * Gets the column schema for the specified column index.
-	 * @param columnIndex The column index.
-	 * @returns The column schema for the specified column index.
+	 * Gets the column schema for the column at a specific display index.
+	 * @param displayIndex The display position index for the column.
+	 * @returns The column schema for the for the column at a specific display index.
 	 */
-	getColumnSchema(columnIndex: number) {
-		return this._columnSchemaCache.get(columnIndex);
+	getColumnSchema(displayIndex: number) {
+		const originalIndex = this._renderOrder[displayIndex];
+		return this._columnSchemaCache.get(originalIndex);
 	}
 
 	/**
-	 * Gets the column profile for the specified column index.
-	 * @param columnIndex The column index.
-	 * @returns The column profile for the specified column index.
+	 * Gets the column profile for the column at a specific display index.
+	 * @param displayIndex The display position index for the column.
+	 * @returns The column profile for the for the column at a specific display index.
 	 */
-	getColumnProfile(columnIndex: number) {
-		return this._columnProfileCache.get(columnIndex);
+	getColumnProfile(displayIndex: number) {
+		const originalIndex = this._renderOrder[displayIndex];
+		return this._columnProfileCache.get(originalIndex);
+	}
+
+	/**
+	 * Gets the original column index for a display position.
+	 * @param displayIndex The display position index for the column.
+	 * @returns The original column index, or undefined if not found.
+	 */
+	getOriginalColumnIndex(displayIndex: number): number | undefined {
+		return this._renderOrder[displayIndex];
 	}
 
 	//#endregion Public Methods
