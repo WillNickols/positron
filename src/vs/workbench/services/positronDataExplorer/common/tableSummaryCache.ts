@@ -286,8 +286,6 @@ export class TableSummaryCache extends Disposable {
 			// When searching, we need to get the indices of the columns that match the search request
 			const searchResults = await this._dataExplorerClientInstance.searchSchema({
 				searchText: this._searchText,
-				startIndex: columnIndices[0],
-				numColumns: columnIndices[columnIndices.length - 1] - columnIndices[0] + 1
 			});
 
 			// Fetch the schema for the columns that match the search request

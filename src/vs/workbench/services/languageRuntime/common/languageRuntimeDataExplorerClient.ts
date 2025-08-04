@@ -8,23 +8,7 @@ import { Emitter, Event } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { URI } from '../../../../base/common/uri.js';
 import { generateUuid } from '../../../../base/common/uuid.js';
-import { ArraySelection, BackendState, CodeSyntaxName, ColumnFilter, ColumnProfileRequest, ColumnProfileResult, ColumnSchema, ColumnSelection, ColumnSortKey, DataExplorerFrontendEvent, DataUpdateEvent, ExportedData, ExportFormat, FilterResult, FormatOptions, ReturnColumnProfilesEvent, RowFilter, SchemaUpdateEvent, SupportedFeatures, SupportStatus, TableData, TableRowLabels, TableSchema, TableSelection, ConvertedCode } from './positronDataExplorerComm.js';
-
-/**
- * TableSchemaSearchResult interface. This is here temporarily until searching the tabe schema
- * becomespart of the PositronDataExplorerComm.
- */
-export interface TableSchemaSearchResult {
-	/**
-	 * The number of matching columns.
-	 */
-	matching_columns: number;
-
-	/**
-	 * Column schema for the matching columns.
-	 */
-	columns: Array<ColumnSchema>;
-}
+import { ArraySelection, BackendState, CodeSyntaxName, ColumnFilter, ColumnFilterType, ColumnProfileRequest, ColumnProfileResult, ColumnSelection, ColumnSortKey, DataExplorerFrontendEvent, DataUpdateEvent, ExportedData, ExportFormat, FilterResult, FormatOptions, ReturnColumnProfilesEvent, RowFilter, SchemaUpdateEvent, SearchSchemaParams, SearchSchemaResult, SearchSchemaSortOrder, SupportedFeatures, SupportStatus, TableData, TableRowLabels, TableSchema, TableSelection, TextSearchType, ConvertedCode } from './positronDataExplorerComm.js';
 
 export enum DataExplorerClientStatus {
 	Idle,
@@ -72,6 +56,7 @@ export interface IDataExplorerBackendClient extends Disposable {
 	setRowFilters(filters: Array<RowFilter>): Promise<FilterResult>;
 	setSortColumns(sortKeys: Array<ColumnSortKey>): Promise<void>;
 	getColumnProfiles(callbackId: string, profiles: Array<ColumnProfileRequest>, formatOptions: FormatOptions): Promise<void>;
+	searchSchema(params: SearchSchemaParams): Promise<SearchSchemaResult>;
 }
 
 export const DATA_EXPLORER_DISCONNECTED_STATE: BackendState = {
@@ -351,38 +336,36 @@ export class DataExplorerClientInstance extends Disposable {
 
 	/**
 	 * Searches the table schema.
-	 * @param searchText The search text.
-	 * @param startIndex The starting index.
-	 * @param numColumns The number of columns to return.
-	 * @returns A TableSchemaSearchResult that contains the search result.
+	 * @param options The search options.
+	 * @param options.searchText The search text.
+	 * @returns A promise that resolves to an array of matching column indices.
 	 */
-	async searchSchema(options: {
-		searchText?: string;
-		startIndex: number;
-		numColumns: number;
-	}): Promise<TableSchemaSearchResult> {
-		/**
-		 * Brute force temporary implementation.
-		 */
+	async searchSchema(options: { searchText: string }): Promise<SearchSchemaResult> {
+		const filters: ColumnFilter[] = [];
 
-		// Get the table state so we know now many columns there are.
-		const tableState = await this.getBackendState();
+		const trimmedSearchText = options.searchText?.trim();
+		// If we have search text, create a text search filter
+		if (trimmedSearchText) {
+			filters.push({
+				filter_type: ColumnFilterType.TextSearch,
+				params: {
+					search_type: TextSearchType.Contains,
+					term: trimmedSearchText,
+					case_sensitive: false
+				}
+			});
+		}
 
-		// Load the entire schema of the table so it can be searched.
-		const tableSchema = await this._backendClient.getSchema(
-			[...Array(tableState.table_shape.num_columns).keys()]
-		);
-
-		// Search the columns finding every matching one.
-		const columns = tableSchema.columns.filter(columnSchema =>
-			!options.searchText ? true : columnSchema.column_name.trim().toLocaleLowerCase().includes(options.searchText.trim().toLocaleLowerCase())
-		);
-
-		// Return the result.
-		return {
-			matching_columns: columns.length,
-			columns: columns.slice(options.startIndex, options.numColumns)
+		const params: SearchSchemaParams = {
+			filters,
+			sort_order: SearchSchemaSortOrder.Original
 		};
+
+		// Use runBackendTask for proper error handling and status management
+		return this.runBackendTask(
+			() => this._backendClient.searchSchema(params),
+			() => ({ matches: [] })
+		);
 	}
 
 	/**
