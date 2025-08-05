@@ -1523,13 +1523,13 @@ export class PositronDataExplorerComm extends PositronBaseComm {
 	 * Search table schema with column filters, optionally sort results
 	 *
 	 * @param filters Column filters to apply when searching, can be empty
-	 * @param sortOrder How to sort results: original in-schema order,
+	 * @param sort_order How to sort results: original in-schema order,
 	 * alphabetical ascending or descending
 	 *
 	 * @returns undefined
 	 */
-	searchSchema(filters: Array<ColumnFilter>, sortOrder: SearchSchemaSortOrder): Promise<SearchSchemaResult> {
-		return super.performRpc('search_schema', ['filters', 'sort_order'], [filters, sortOrder]);
+	searchSchema(params: SearchSchemaParams): Promise<SearchSchemaResult> {
+		return super.performRpc('search_schema', ['filters', 'sort_order'], [params.filters, params.sort_order]);
 	}
 
 	/**
