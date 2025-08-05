@@ -137,7 +137,7 @@ export class TableSummaryDataGridInstance extends DataGridInstance {
 			await updateLayoutEntries(state);
 
 			// Invalidate cache and fetch data, profiles
-			await this.fetchData(/* invalidateCache=*/true);
+			await this.fetchData(true);
 		}));
 
 		// Add the table summary cache onDidUpdate event handler.

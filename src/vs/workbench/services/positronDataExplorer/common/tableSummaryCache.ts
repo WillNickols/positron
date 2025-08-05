@@ -240,39 +240,34 @@ export class TableSummaryCache extends Disposable {
 			screenColumns
 		} = updateDescriptor;
 
-		const searchTextChanged = searchText !== this._searchText;
+		const searchTextChanged = this._searchText !== searchText;
 		this._searchText = searchText;
-
-		// Clear caches when search changes to force reloading new search results.
-		if (invalidateCache || searchTextChanged) {
-			this._columnSchemaCache.clear();
-			this._columnProfileCache.clear();
-			this._renderOrder = []; // Clear the render order array
-		}
 
 		// Get the size of the data.
 		const tableState = await this._dataExplorerClientInstance.getBackendState();
 		this._rows = tableState.table_shape.num_rows;
 
 		const overscanColumns = screenColumns * OVERSCAN_FACTOR;
-		// Determine the first column index to start caching from.
+		// Determine the first display index to start caching from.
 		const startColumnIndex = Math.max(
 			0,
 			firstColumnIndex - overscanColumns
 		);
-		// Determines the minimum number of columns we need to cache
-		// to fill the screen (including overscan).
+		// The end column index is used to determines the minimum
+		// number of columns we need to cache to fill the screen
+		// (including overscan)
 		const endColumnIndex = Math.min(
 			tableState.table_shape.num_columns - 1,
 			firstColumnIndex + screenColumns + overscanColumns
 		);
 
+		// Get the physical screen indices that we will need data for.
 		let columnIndices: number[] = [];
-		// If the cache is invalidated or the search text has changed,
-		// we will need to load all the columns in view into the cache again
-		if (invalidateCache || searchTextChanged) {
+		// If the cache is invalidated, we will need to load the data for all the
+		// columns in view (plsu overscan), into the cache again
+		if (invalidateCache) {
 			columnIndices = arrayFromIndexRange(startColumnIndex, endColumnIndex);
-		} else {
+		} else if (!searchTextChanged) {
 			// If the cache is not invalidated and the search text has not changed,
 			// we will only load the columns in view that are not already cached
 			for (let columnIndex = startColumnIndex; columnIndex <= endColumnIndex; columnIndex++) {
@@ -282,30 +277,56 @@ export class TableSummaryCache extends Disposable {
 			}
 		}
 
+		// Clear cache if its been invalidated
+		if (invalidateCache) {
+			this._columnSchemaCache.clear();
+			this._columnProfileCache.clear();
+			// Reset the render order to the columns in view.
+			this._renderOrder = arrayFromIndexRange(startColumnIndex, endColumnIndex);
+		}
+
 		if (this._searchText) {
 			// When searching, we need to get the indices of the columns that match the search request
 			const searchResults = await this._dataExplorerClientInstance.searchSchema({
 				searchText: this._searchText,
 			});
 
-			// Fetch the schema for the columns that match the search request
-			const tableSchema = await this._dataExplorerClientInstance.getSchema(searchResults);
+			if (searchResults.matches.length > 0) {
+				// Fetch the schema for the columns that match the search request
+				const tableSchema = await this._dataExplorerClientInstance.getSchema(searchResults.matches);
 
-			// Set the number of rows we will be rendering based on the search results
-			// this._columns = tableSchema.matching_columns.length;
+				this._columns = searchResults.matches.length;
+
+				// Update the cache with the column schemas for the columns that match the search request
+				for (let i = 0; i < searchResults.matches.length; i++) {
+					const matchIndex = searchResults.matches[i];
+					const columnSchema = tableSchema.columns[matchIndex];
+					this._columnSchemaCache.set(matchIndex, columnSchema);
+				}
+
+				// Then replace the render order with the search results
+				this._renderOrder = searchResults.matches;
+			}
 		} else {
 			// the column indices are a direct mapping to the original data indices so we can use them directly
 			const tableSchema = await this._dataExplorerClientInstance.getSchema(columnIndices);
 
 			// When not searching, use the total number of columns from the table state
 			this._columns = tableState.table_shape.num_columns;
+
+			// Cache the column schema that was returned.
+			for (let i = 0; i < tableSchema.columns.length; i++) {
+				this._columnSchemaCache.set(columnIndices[i], tableSchema.columns[i]);
+			}
+
+			this._renderOrder = columnIndices;
 		}
 
 		// Fire the onDidUpdate event.
 		this._onDidUpdateEmitter.fire();
 
 		// Update the column profile cache.
-		await this.updateColumnProfileCache(columnIndices);
+		await this.updateColumnProfileCache(this._renderOrder);
 
 		// Clear the updating flag.
 		this._updating = false;
