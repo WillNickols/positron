@@ -44,6 +44,14 @@ export class HotKeys {
 		await this.pressHotKeys('Cmd+Z');
 	}
 
+	// ------------------------
+	// --- Notebook Actions ---
+	// ------------------------
+
+	public async executeNotebookCell() {
+		await this.pressHotKeys('Shift+Enter', 'Execute notebook cell');
+	}
+
 	// --------------------
 	// --- File Actions ---
 	// --------------------
@@ -148,7 +156,7 @@ export class HotKeys {
 
 	public async closeWorkspace() {
 		await this.pressHotKeys('Cmd+J W');
-		await expect(this.code.driver.page.locator('.explorer-folders-view')).toBeVisible();
+		await expect(this.code.driver.page.locator('.explorer-folders-view')).not.toBeVisible();
 	}
 
 	public async importSettings() {
