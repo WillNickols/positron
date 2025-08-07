@@ -277,7 +277,9 @@ async function downloadFromGitHubRepository(
 
 		console.log('Building Ark from source...');
 
-		await executeCommand('cargo build', undefined, tempDir);
+		const buildOutput = await executeCommand('cargo build', undefined, tempDir);
+		console.log('Ark build stdout:', buildOutput.stdout);
+		console.log('Ark build stderr:', buildOutput.stderr);
 
 		// Determine the location of the built binary
 		const kernelName = platform() === 'win32' ? 'ark.exe' : 'ark';
