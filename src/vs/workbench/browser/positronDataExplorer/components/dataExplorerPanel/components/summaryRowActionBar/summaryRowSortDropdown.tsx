@@ -9,8 +9,7 @@ import React from 'react';
 
 import { ActionBarMenuButton } from '../../../../../../../platform/positronActionBar/browser/components/actionBarMenuButton.js';
 import { localize } from '../../../../../../../nls.js';
-import { SummaryRowSortOption } from '../../../../../../services/positronDataExplorer/common/tableSummaryCache.js';
-
+import { SearchSchemaSortOrder } from '../../../../../../services/languageRuntime/common/positronDataExplorerComm.js';
 /**
  * Localized strings.
  */
@@ -18,34 +17,22 @@ const positronDataExplorerSummarySort = localize('positron.dataExplorer.sort', "
 const positronSortByOriginal = localize('positron.dataExplorer.sortByOriginal', "Sort by Original");
 const positronSortByNameAsc = localize('positron.dataExplorer.sortByNameAsc', "Sort by Name, Ascending");
 const positronSortByNameDesc = localize('positron.dataExplorer.sortByNameDesc', "Sort by Name, Descending");
-const positronSortByTypeAsc = localize('positron.dataExplorer.sortByTypeAsc', "Sort by Type, Ascending");
-const positronSortByTypeDesc = localize('positron.dataExplorer.sortByTypeDesc', "Sort by Type, Descending");
 
 const sortOptions = [
 	{
-		id: SummaryRowSortOption.Original,
+		id: SearchSchemaSortOrder.Original,
 		label: positronSortByOriginal,
-		option: SummaryRowSortOption.Original
+		option: SearchSchemaSortOrder.Original
 	},
 	{
-		id: SummaryRowSortOption.NameAscending,
+		id: SearchSchemaSortOrder.Ascending,
 		label: positronSortByNameAsc,
-		option: SummaryRowSortOption.NameAscending
+		option: SearchSchemaSortOrder.Ascending
 	},
 	{
-		id: SummaryRowSortOption.NameDescending,
+		id: SearchSchemaSortOrder.Descending,
 		label: positronSortByNameDesc,
-		option: SummaryRowSortOption.NameDescending
-	},
-	{
-		id: SummaryRowSortOption.TypeAscending,
-		label: positronSortByTypeAsc,
-		option: SummaryRowSortOption.TypeAscending
-	},
-	{
-		id: SummaryRowSortOption.TypeDescending,
-		label: positronSortByTypeDesc,
-		option: SummaryRowSortOption.TypeDescending
+		option: SearchSchemaSortOrder.Descending
 	}
 ];
 
@@ -58,8 +45,8 @@ const sortLabelMap = new Map(
  * SummaryRowSortDropdownProps interface.
  */
 export interface SummaryRowSortDropdownProps {
-	currentSort: SummaryRowSortOption; // TODO: replace with backend supported option or map to backend supported options
-	onSortChanged: (sortOption: SummaryRowSortOption) => void;
+	currentSort: SearchSchemaSortOrder;
+	onSortChanged: (sortOption: SearchSchemaSortOrder) => void;
 }
 
 export const SummaryRowSortDropdown = ({ currentSort, onSortChanged }: SummaryRowSortDropdownProps) => {

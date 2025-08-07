@@ -9,7 +9,7 @@ import { IConfigurationService } from '../../../../platform/configuration/common
 import { arrayFromIndexRange } from './utils.js';
 import { DataExplorerClientInstance } from '../../languageRuntime/common/languageRuntimeDataExplorerClient.js';
 import { dataExplorerExperimentalFeatureEnabled } from './positronDataExplorerExperimentalConfig.js';
-import { ColumnDisplayType, ColumnHistogramParamsMethod, ColumnProfileRequest, ColumnProfileResult, ColumnProfileSpec, ColumnProfileType, ColumnSchema } from '../../languageRuntime/common/positronDataExplorerComm.js';
+import { ColumnDisplayType, ColumnHistogramParamsMethod, ColumnProfileRequest, ColumnProfileResult, ColumnProfileSpec, ColumnProfileType, ColumnSchema, SearchSchemaSortOrder } from '../../languageRuntime/common/positronDataExplorerComm.js';
 
 /**
  * Constants.
@@ -49,7 +49,7 @@ export enum SummaryRowSortOption {
 interface UpdateDescriptor {
 	invalidateCache: boolean;
 	searchText?: string;
-	sortOption?: SummaryRowSortOption;
+	sortOption?: SearchSchemaSortOrder;
 	firstColumnIndex: number;
 	screenColumns: number;
 }
@@ -85,7 +85,7 @@ export class TableSummaryCache extends Disposable {
 	/**
 	 * The sort option used to order the summary rows.
 	 */
-	private _sortOption?: SummaryRowSortOption;
+	private _sortOption?: SearchSchemaSortOrder;
 
 	/**
 	 * Gets or sets the columns.
@@ -291,7 +291,7 @@ export class TableSummaryCache extends Disposable {
 		const tableSchema = this._searchText
 			? await this._dataExplorerClientInstance.searchSchema({
 				searchText: this._searchText,
-				//sortOption: this._sortOption ?? SummaryRowSortOption.Original,
+				//sortOption: this._sortOption,
 				startIndex: columnIndices[0],
 				numColumns: columnIndices[columnIndices.length - 1] - columnIndices[0] + 1
 			})
