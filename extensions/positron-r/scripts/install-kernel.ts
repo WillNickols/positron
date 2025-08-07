@@ -290,6 +290,11 @@ async function downloadFromGitHubRepository(
 			throw new Error(`Failed to build Ark binary at ${binaryPath}`);
 		}
 
+		// Run the binary with --version and check output. An error will be thrown if this fails.
+		const { stdout: versionStdout, stderr: versionStderr } = await executeCommand(`${binaryPath}`);
+		console.log('Ark stdout:', versionStdout);
+		console.log('Ark stderr:', versionStderr);
+
 		// Create the resources/ark directory if it doesn't exist
 		const arkDir = path.join('resources', 'ark');
 		if (!await existsAsync(arkDir)) {
