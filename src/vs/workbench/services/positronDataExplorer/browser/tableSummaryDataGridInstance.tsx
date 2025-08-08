@@ -149,10 +149,14 @@ export class TableSummaryDataGridInstance extends DataGridInstance {
 		}));
 
 		// Add the table summary cache onDidUpdate event handler.
-		this._register(this._tableSummaryCache.onDidUpdate(() =>
+		this._register(this._tableSummaryCache.onDidUpdate(() => {
+			// Update the layout entries to reflect the current number of visible rows
+			// When searching/sorting, the number of rows displayed can change
+			this._rowLayoutManager.setLayoutEntries(this._tableSummaryCache.columns);
+
 			// Fire the onDidUpdate event.
-			this._onDidUpdateEmitter.fire()
-		));
+			this._onDidUpdateEmitter.fire();
+		}));
 
 		// Create the hover manager.
 		this._hoverManager = this._register(new PositronActionBarHoverManager(
