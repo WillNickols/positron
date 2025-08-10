@@ -100,7 +100,7 @@ import './positron/mainThreadConsoleService.js';
 import './positron/mainThreadContextKeyService.js';
 import './positron/mainThreadConnections.js';
 import './positron/mainThreadEnvironment.js';
-import './positron/mainThreadAiFeatures.js';
+
 import './positron/mainThreadPlotsService.js';
 // --- End Positron ---
 

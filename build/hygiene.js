@@ -395,7 +395,7 @@ if (require.main === module) {
 						.then(
 							(vinyls) =>
 								new Promise((c, e) =>
-									hygiene(es.readArray(vinyls).pipe(filter(all)))
+									hygiene(es.readArray(vinyls).pipe(filter(all)), true, false)
 										.on('end', () => c())
 										.on('error', e)
 								)

@@ -454,7 +454,7 @@ import './contrib/editTelemetry/browser/editTelemetry.contribution.js';
 // --- Start Positron ---
 
 // Contributions
-import './contrib/positronAssistant/browser/positronAssistant.contribution.js';
+
 import './contrib/positronConsole/browser/positronConsole.contribution.js';
 import './contrib/positronConsole/browser/positronConsoleView.js';
 import './contrib/positronDataExplorerEditor/browser/positronDataExplorerEditor.contribution.js';
@@ -479,5 +479,5 @@ import './services/positronVariables/common/positronVariables.contribution.js';
 import './services/positronDataExplorer/browser/positronDataExplorerService.js';
 import './services/positronConnections/browser/positronConnectionsService.js';
 import './contrib/positronWebviewPreloads/browser/positronWebviewPreloadsService.js';
-import './contrib/positronAssistant/browser/positronAssistantService.js';
+
 // --- End Positron ---

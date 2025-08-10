@@ -179,10 +179,6 @@
 			"project": "vscode-workbench"
 		},
 		{
-			"name": "vs/workbench/contrib/positronAssistant",
-			"project": "vscode-workbench"
-		},
-		{
 			"name": "vs/workbench/contrib/positronVariables",
 			"project": "vscode-workbench"
 		},

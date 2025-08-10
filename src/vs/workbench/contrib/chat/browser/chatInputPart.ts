@@ -108,7 +108,7 @@ import { ChatRuntimeSessionContext } from './contrib/chatRuntimeSessionContext.j
 import { RuntimeSessionContextAttachmentWidget } from './attachments/runtimeSessionContextAttachment.js';
 import { RuntimeSessionAttachmentWidget } from './chatRuntimeAttachmentWidget.js';
 // eslint-disable-next-line no-duplicate-imports
-import { isResponseVM } from '../common/chatViewModel.js';
+
 // --- End Positron ---
 
 const $ = dom.$;
@@ -248,9 +248,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 	private chatEditingSessionWidgetContainer!: HTMLElement;
 
-	// --- Start Positron ---
-	private tokenUsageContainer!: HTMLElement;
-	// --- End Positron ---
+
 
 	private _inputPartHeight: number;
 	get inputPartHeight() {
@@ -487,39 +485,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			}
 		}));
 
-		// --- Start Positron ---
-		// switches models if one has been added and there is no current model or the current model has been removed
-		this._register(this.languageModelsService.onDidChangeLanguageModels(e => {
-			const hasCurrentModel = this.languageModelsService.getLanguageModelIdsForCurrentProvider().some(modelId => modelId === this._currentLanguageModel?.identifier);
-			if (e.added && !hasCurrentModel) {
-				const newDefault = e.added.find(model => model.metadata.isUserSelectable
-					&& model.metadata.family === this.languageModelsService.currentProvider?.id);
-				if (newDefault) {
-					this.setCurrentLanguageModel({ metadata: newDefault.metadata, identifier: newDefault.identifier });
-				}
-			}
 
-			if (e.removed) {
-				// if the current model is removed, try to set a new model
-				const models = this.getModels();
-				if (models.length > 0) {
-					if (this._currentLanguageModel && e.removed.some(model => model === this._currentLanguageModel?.identifier)) {
-						this.setCurrentLanguageModel(models[0]);
-					}
-				}
-			}
-		}));
-
-		this._register(this.languageModelsService.onDidChangeCurrentProvider((provider) => {
-			// if the current provider is not the same as the current model's provider, change the current model to the first model of the new provider
-			if (this._currentLanguageModel && provider && this._currentLanguageModel.metadata.family !== provider.id) {
-				const models = this.getModels();
-				if (models.length > 0) {
-					this.setCurrentLanguageModel(models[0]);
-				}
-			}
-		}));
-		// --- End Positron ---
 	}
 
 	private getSelectedModelStorageKey(): string {
@@ -653,11 +619,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	}
 
 	public getModels(): ILanguageModelChatMetadataAndIdentifier[] {
-		// --- Start Positron ---
-		// Restrict models to the current provider.
-		// const models = this.languageModelsService.getLanguageModelIds()
-		const models = this.languageModelsService.getLanguageModelIdsForCurrentProvider()
-			// --- End Positron ---
+		const models = this.languageModelsService.getLanguageModelIds()
 			.map(modelId => ({ identifier: modelId, metadata: this.languageModelsService.lookupLanguageModel(modelId)! }))
 			.filter(entry => entry.metadata?.isUserSelectable && this.modelSupportedForDefaultAgent(entry));
 		models.sort((a, b) => a.metadata.name.localeCompare(b.metadata.name));
@@ -666,13 +628,8 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	}
 
 	private setCurrentLanguageModelToDefault() {
-		// --- Start Positron ---
-		// Restrict models to the current provider.
-		// const defaultLanguageModelId = this.languageModelsService.getLanguageModelIds().find(id => this.languageModelsService.lookupLanguageModel(id)?.isDefault);
-		// const hasUserSelectableLanguageModels = this.languageModelsService.getLanguageModelIds().find(id => {
-		const defaultLanguageModelId = this.languageModelsService.getLanguageModelIdsForCurrentProvider().find(id => this.languageModelsService.lookupLanguageModel(id)?.isDefault);
-		const hasUserSelectableLanguageModels = this.languageModelsService.getLanguageModelIdsForCurrentProvider().find(id => {
-			// --- End Positron ---
+		const defaultLanguageModelId = this.languageModelsService.getLanguageModelIds().find(id => this.languageModelsService.lookupLanguageModel(id)?.isDefault);
+		const hasUserSelectableLanguageModels = this.languageModelsService.getLanguageModelIds().find(id => {
 			const model = this.languageModelsService.lookupLanguageModel(id);
 			return model?.isUserSelectable && !model.isDefault;
 		});
@@ -1047,9 +1004,6 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			elements = dom.h('.interactive-input-part', [
 				dom.h('.interactive-input-and-edit-session', [
 					dom.h('.chat-editing-session@chatEditingSessionWidgetContainer'),
-					// --- Start Positron ---
-					dom.h('.chat-token-usage-status@tokenUsageContainer'),
-					// --- End Positron ---
 					dom.h('.interactive-input-and-side-toolbar@inputAndSideToolbar', [
 						dom.h('.chat-input-container@inputContainer', [
 							dom.h('.chat-editor-container@editorContainer'),
@@ -1068,9 +1022,6 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			elements = dom.h('.interactive-input-part', [
 				dom.h('.interactive-input-followups@followupsContainer'),
 				dom.h('.chat-editing-session@chatEditingSessionWidgetContainer'),
-				// --- Start Positron ---
-				dom.h('.chat-token-usage-status@tokenUsageContainer'),
-				// --- End Positron ---
 				dom.h('.interactive-input-and-side-toolbar@inputAndSideToolbar', [
 					dom.h('.chat-input-container@inputContainer', [
 						dom.h('.chat-attachments-container@attachmentsContainer', [
@@ -1099,10 +1050,6 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		const toolbarsContainer = elements.inputToolbars;
 		const attachmentToolbarContainer = elements.attachmentToolbar;
 		this.chatEditingSessionWidgetContainer = elements.chatEditingSessionWidgetContainer;
-		// --- Start Positron ---
-		this.tokenUsageContainer = elements.tokenUsageContainer;
-		this.tokenUsageContainer.style.display = 'none'; // Initially hidden
-		// --- End Positron ---
 		if (this.options.enableImplicitContext) {
 			this._implicitContext = this._register(
 				this.instantiationService.createInstance(ChatImplicitContext),
@@ -1748,9 +1695,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		this._followupsHeight = data.followupsHeight;
 		this._editSessionWidgetHeight = data.chatEditingStateHeight;
 
-		// --- Start Positron ---
-		this._inputPartHeight += this.tokenUsageHeight;
-		// --- End Positron ---
+
 
 		const initialEditorScrollWidth = this._inputEditor.getScrollWidth();
 		const newEditorWidth = width - data.inputPartHorizontalPadding - data.editorBorder - data.inputPartHorizontalPaddingInside - data.toolbarsWidth - data.sideToolbarWidth;
@@ -1786,9 +1731,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			toolbarsHeight: this.options.renderStyle === 'compact' ? 0 : 22,
 			chatEditingStateHeight: this.chatEditingSessionWidgetContainer.offsetHeight,
 			sideToolbarWidth: this.inputSideToolbarContainer ? dom.getTotalWidth(this.inputSideToolbarContainer) + 4 /*gap*/ : 0,
-			// --- Start Positron ---
-			tokenUsageHeight: this.tokenUsageHeight,
-			// --- End Positron ---
+
 		};
 	}
 
@@ -1805,68 +1748,11 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		this.historyService.saveHistory(this.location, inputHistory);
 	}
 
-	// --- Start Positron ---
-	/**
-	 * Calculate the total token usage from a view model's items
-	 */
-	private calculateTotalTokenUsage(viewModel: any): { totalInputTokens: number; totalOutputTokens: number } | undefined {
-		if (!viewModel) {
-			return undefined;
-		}
 
-		let totalInputTokens = 0;
-		let totalOutputTokens = 0;
-		let hasAnyTokenUsage = false;
 
-		for (const item of viewModel.getItems()) {
-			if (isResponseVM(item) && item.tokenUsage && item.isComplete) {
-				totalInputTokens += item.tokenUsage.inputTokens;
-				totalOutputTokens += item.tokenUsage.outputTokens;
-				hasAnyTokenUsage = true;
-			}
-		}
 
-		return hasAnyTokenUsage ? { totalInputTokens, totalOutputTokens } : undefined;
-	}
 
-	/**
-	 * Update the token usage status display
-	 */
-	updateTokenUsageDisplay(viewModel: any): void {
-		if (!this.tokenUsageContainer) {
-			return;
-		}
 
-		const previousDisplay = this.tokenUsageContainer.style.display;
-		const showTokens = this.configurationService.getValue<boolean>('positron.assistant.showTokenUsage.enable');
-		if (!showTokens) {
-			this.tokenUsageContainer.style.display = 'none';
-		} else {
-			const totalTokens = this.calculateTotalTokenUsage(viewModel);
-			if (totalTokens && totalTokens.totalInputTokens > 0 && totalTokens.totalOutputTokens > 0) {
-				dom.clearNode(this.tokenUsageContainer);
-				this.tokenUsageContainer.appendChild(
-					dom.$('.token-usage-total', undefined,
-						localize('totalTokenUsage', "Total tokens: ↑{0} ↓{1}", totalTokens.totalInputTokens, totalTokens.totalOutputTokens)
-					)
-				);
-				this.tokenUsageContainer.style.display = 'block';
-			} else {
-				this.tokenUsageContainer.style.display = 'none';
-			}
-		}
-
-		// Fire height change event if visibility changed
-		if (previousDisplay !== this.tokenUsageContainer.style.display) {
-			this._onDidChangeHeight.fire();
-		}
-	}
-
-	get tokenUsageHeight(): number {
-		return (this.tokenUsageContainer && this.tokenUsageContainer.style.display !== 'none')
-			? this.tokenUsageContainer.offsetHeight : 0;
-	}
-	// --- End Positron ---
 }
 
 const historyKeyFn = (entry: IChatHistoryEntry) => JSON.stringify({ ...entry, state: { ...entry.state, chatMode: undefined } });

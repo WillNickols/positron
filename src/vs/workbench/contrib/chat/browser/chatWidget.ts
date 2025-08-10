@@ -73,11 +73,6 @@ import { ComputeAutomaticInstructions } from '../common/promptSyntax/computeAuto
 import { startupExpContext, StartupExperimentGroup } from '../../../services/coreExperimentation/common/coreExperimentationService.js';
 import { IWorkspaceContextService, WorkbenchState } from '../../../../platform/workspace/common/workspace.js';
 
-// --- Start Positron ---
-import './media/positronChat.css';
-import { ILanguageModelsService } from '../common/languageModels.js';
-import { ChatActionBarControl } from './positron/chatActionBarControl.js';
-// --- End Positron ---
 
 const $ = dom.$;
 
@@ -186,9 +181,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	private welcomeMessageContainer!: HTMLElement;
 	private readonly welcomePart: MutableDisposable<ChatViewWelcomePart> = this._register(new MutableDisposable());
 
-	// --- Start Positron ---
-	private actionBarContainer?: ChatActionBarControl;
-	// --- End Positron ---
+
 
 	private bodyDimension: dom.Dimension | undefined;
 	private visibleChangeCount = 0;
@@ -300,7 +293,6 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		@IChatSlashCommandService private readonly chatSlashCommandService: IChatSlashCommandService,
 		@IChatEditingService chatEditingService: IChatEditingService,
 		@ITelemetryService private readonly telemetryService: ITelemetryService,
-		@ILanguageModelsService private readonly languageModelsService: ILanguageModelsService,
 		@IPromptsService private readonly promptsService: IPromptsService,
 		@ILanguageModelToolsService private readonly toolsService: ILanguageModelToolsService,
 		@IWorkspaceContextService private readonly contextService: IWorkspaceContextService
@@ -373,9 +365,6 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			if (e.affectsConfiguration('chat.renderRelatedFiles')) {
 				this.renderChatEditingSessionState();
 			} else if (e.affectsConfiguration(ChatConfiguration.EditRequests)) {
-				this.settingChangeCounter++;
-				this.onDidChangeItems();
-			} else if (e.affectsConfiguration('positron.assistant.showTokenUsage.enable') || e.affectsConfiguration('positron.assistant.approximateTokenCount')) {
 				this.settingChangeCounter++;
 				this.onDidChangeItems();
 			}
@@ -561,15 +550,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			this.createInput(this.container, { renderFollowups, renderStyle });
 		}
 
-		// --- Start Positron ---
-		// Don't show the input part if the assistant is disabled
-		if (!this.configurationService.getValue('positron.assistant.enable')) {
-			const input = this.container.querySelector('.interactive-input-part') as HTMLElement;
-			if (input) {
-				dom.hide(input);
-			}
-		}
-		// --- End Positron ---
+
 
 		this.renderWelcomeViewContentIfNeeded();
 		this.createList(this.listContainer, { ...this.viewOptions.rendererOptions, renderStyle });
@@ -591,14 +572,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this._register(this.editorOptions.onDidChange(() => this.onDidStyleChange()));
 		this.onDidStyleChange();
 
-		// --- Start Positron ---
-		if (this.location === ChatAgentLocation.Panel) {
-			this.actionBarContainer = this._register(this.instantiationService.createInstance(ChatActionBarControl, this.inputPart));
-			this.actionBarContainer.render(this.container);
-			// When a provider is selected in the UI, update it in the language models service.
-			this.actionBarContainer.onProviderSelected((provider) => this.languageModelsService.currentProvider = provider);
-		}
-		// --- End Positron ---
+
 
 		// Do initial render
 		if (this.viewModel) {
@@ -768,10 +742,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 			this.renderFollowups();
 
-			// --- Start Positron ---
-			// Update token usage display when items change
-			this.input.updateTokenUsageDisplay(this.viewModel);
-			// --- End Positron ---
+
 		}
 	}
 
@@ -794,14 +765,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			);
 
 			let welcomeContent: IChatViewWelcomeContent;
-			// --- Start Positron ---
-			/*
 			if ((startupExpValue === StartupExperimentGroup.MaximizedChat
-			*/
-			// Don't use the experimental view for Positron Assistant
-			const useExpView = false;
-			if (useExpView && (startupExpValue === StartupExperimentGroup.MaximizedChat
-				// --- End Positron ---
 				|| startupExpValue === StartupExperimentGroup.SplitEmptyEditorChat
 				|| startupExpValue === StartupExperimentGroup.SplitWelcomeChat
 				|| expIsActive) && this.contextKeyService.contextMatchesRules(chatSetupTriggerContext)) {
@@ -811,29 +775,17 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			else {
 				const defaultAgent = this.chatAgentService.getDefaultAgent(this.location, this.input.currentModeKind);
 				const additionalMessage = defaultAgent?.metadata.additionalWelcomeMessage;
-				// --- Start Positron ---
-				if (numItems) {
-					// Dead code (from upstream) to generate welcome content for
-					// the chat widget. Doesn't run since numItems must be 0 for
-					// us to reach this point.
-					const tips = this.input.currentModeKind === ChatModeKind.Ask
-						? new MarkdownString(localize('chatWidget.tips', "{0} or type {1} to attach context\n\n{2} to chat with extensions\n\nType {3} to use commands", '$(attach)', '#', '$(mention)', '/'), { supportThemeIcons: true })
-						: new MarkdownString(localize('chatWidget.tips.withoutParticipants', "{0} or type {1} to attach context", '$(attach)', '#'), { supportThemeIcons: true });
-					welcomeContent = this.getWelcomeViewContent(additionalMessage);
-					welcomeContent.tips = tips;
-				} else {
-					// Positron Assistant welcome content
-					welcomeContent = this.getPositronWelcomeViewContent(additionalMessage);
-				}
-				// --- End Positron ---
+				const tips = this.input.currentModeKind === ChatModeKind.Ask
+					? new MarkdownString(localize('chatWidget.tips', "{0} or type {1} to attach context\n\n{2} to chat with extensions\n\nType {3} to use commands", '$(attach)', '#', '$(mention)', '/'), { supportThemeIcons: true })
+					: new MarkdownString(localize('chatWidget.tips.withoutParticipants', "{0} or type {1} to attach context", '$(attach)', '#'), { supportThemeIcons: true });
+				welcomeContent = this.getWelcomeViewContent(additionalMessage);
+				welcomeContent.tips = tips;
 			}
 			this.welcomePart.value = this.instantiationService.createInstance(
 				ChatViewWelcomePart,
 				welcomeContent,
 				{
-					// --- Start Positron ---
-					firstLinkToButton: !this.languageModelsService.currentProvider,
-					// --- End Positron ---
+
 					location: this.location,
 					isWidgetAgentWelcomeViewContent: this.input?.currentModeKind === ChatModeKind.Agent
 				}
@@ -847,57 +799,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		}
 	}
 
-	// --- Start Positron ---
-	private getPositronWelcomeViewContent(additionalMessage: string | IMarkdownString | undefined): IChatViewWelcomeContent {
-		let welcomeText;
-		let welcomeTitle;
-		let tips: IMarkdownString | undefined;
 
-		// Show an extra configuration link if there are no configured models yet
-		if (!this.configurationService.getValue('positron.assistant.enable')) {
-			welcomeTitle = localize('positronAssistant.comingSoonTitle', "Coming Soon");
-			welcomeText = localize('positronAssistant.comingSoonMessage', "Positron Assistant is under development and will be available in a future version of Positron.\n");
-		} else if (!this.languageModelsService.currentProvider) {
-			// When Anthropic is the only supported provider, we can use a more specific message.
-			// TODO: remove this custom handling https://github.com/posit-dev/positron/issues/8301
-			const hasAdditionalModels = this.configurationService.getValue<boolean>('positron.assistant.testModels') ||
-				this.configurationService.getValue<string[]>('positron.assistant.enabledProviders')?.length > 0;
-
-			welcomeTitle = localize('positronAssistant.gettingStartedTitle', "Set Up Positron Assistant");
-			const addLanguageModelMessage = hasAdditionalModels
-				? localize('positronAssistant.addLanguageModelMessage', "Add Language Model Provider")
-				: localize('positronAssistant.addLanguageModelMessageAnthropic', "Add Anthropic as a Chat Provider");
-			welcomeText = hasAdditionalModels
-				? localize('positronAssistant.welcomeMessage', "To use Positron Assistant you must first select and authenticate with a language model provider.\n")
-				: localize('positronAssistant.welcomeMessageAnthropic', "To use Positron Assistant Chat, you must first authenticate with Anthropic.\n");
-			welcomeText += `\n\n[${addLanguageModelMessage}](command:positron-assistant.configureModels)`;
-		} else {
-			const guideLinkMessage = localize('positronAssistant.guideLinkMessage', "Positron Assistant User Guide");
-			welcomeTitle = localize('positronAssistant.welcomeMessageTitle', "Welcome to Positron Assistant");
-			// eslint-disable-next-line local/code-no-unexternalized-strings
-			welcomeText = localize('positronAssistant.welcomeMessageReady', `Positron Assistant is an AI coding companion designed to accelerate and enhance your data science projects.
-
-The {guide-link} explains the possibilities and capabilities of Positron Assistant.
-
-Always verify results. AI assistants can sometimes produce incorrect code.`);
-			// eslint-disable-next-line local/code-no-unexternalized-strings
-			tips = new MarkdownString(localize('positronAssistant.welcomeMessageReadyTips', `Click on or type $(mention) to select a Chat Participant.
-
-Click on $(attach) or type \`#\` to add context, such as files to your chat.
-
-Type \`/\` to use predefined commands such as \`/help\`.`,
-			), { supportThemeIcons: true, isTrusted: true });
-			welcomeText = welcomeText.replace('{guide-link}', `[${guideLinkMessage}](https://positron.posit.co/assistant)`);
-		}
-		return {
-			title: welcomeTitle,
-			message: new MarkdownString(welcomeText, { supportThemeIcons: true, isTrusted: true }),
-			icon: Codicon.positronAssistant,
-			tips,
-			additionalMessage,
-		};
-	}
-	// --- End Positron ---
 
 	private getWelcomeViewContent(additionalMessage: string | IMarkdownString | undefined): IChatViewWelcomeContent {
 		const baseMessage = localize('chatMessage', "Copilot is powered by AI, so mistakes are possible. Review output carefully before use.");
@@ -1006,10 +908,7 @@ Type \`/\` to use predefined commands such as \`/help\`.`,
 				// Do it after a timeout because the container is not visible yet (it should be but offsetHeight returns 0 here)
 				if (this._visible) {
 					this.onDidChangeItems(true);
-					// --- Start Positron ---
-					// Update token usage display when widget becomes visible
-					this.input.updateTokenUsageDisplay(this.viewModel);
-					// --- End Positron ---
+
 				}
 			}, 0));
 		} else if (wasVisible) {
@@ -1892,9 +1791,6 @@ Type \`/\` to use predefined commands such as \`/help\`.`,
 	}
 
 	layout(height: number, width: number): void {
-		// --- Start Positron ---
-		const actionBarHeight = this.actionBarContainer?.height ?? 0;
-		// --- End Positron ---
 		width = Math.min(width, 850);
 		this.bodyDimension = new dom.Dimension(width, height);
 
@@ -1913,9 +1809,7 @@ Type \`/\` to use predefined commands such as \`/help\`.`,
 		const inputHeight = this.inputPart.inputPartHeight;
 		const lastElementVisible = this.tree.scrollTop + this.tree.renderHeight >= this.tree.scrollHeight - 2;
 
-		// --- Start Positron ---
-		const contentHeight = Math.max(0, height - inputHeight - actionBarHeight);
-		// --- End Positron ---
+		const contentHeight = Math.max(0, height - inputHeight);
 		if (this.viewOptions.renderStyle === 'compact' || this.viewOptions.renderStyle === 'minimal') {
 			this.listContainer.style.removeProperty('--chat-current-response-min-height');
 		} else {
@@ -2064,17 +1958,7 @@ Type \`/\` to use predefined commands such as \`/help\`.`,
 		this.agentInInput.set(!!currentAgent);
 	}
 
-	// --- Start Positron ---
-	// This is required so we can add our own items to menus such as `MenuId.ChatInput` from an
-	// extension, since the chat widget object is passed as a context argument to commands.
-	// TODO: Include additional useful properties in the serialisation as required.
-	toJSON(): string {
-		return JSON.stringify({
-			_location: this._location,
-			_visible: this._visible
-		});
-	}
-	// --- End Positron ---
+
 
 	private async _applyPromptMetadata(metadata: TPromptMetadata, requestInput: IChatRequestInputOptions): Promise<void> {
 		const { mode, tools, model } = metadata;

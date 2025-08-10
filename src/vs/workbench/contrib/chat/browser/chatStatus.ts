@@ -44,13 +44,7 @@ import { Codicon } from '../../../../base/common/codicons.js';
 import { URI } from '../../../../base/common/uri.js';
 import { IInlineCompletionsService } from '../../../../editor/browser/services/inlineCompletionsService.js';
 
-// --- Start Positron ---
-import { ILanguageFeaturesService } from '../../../../editor/common/services/languageFeatures.js';
-import { ILanguageModelsService } from '../common/languageModels.js';
-import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
-import { IEditorGroupsService, IEditorPart } from '../../../services/editor/common/editorGroupsService.js';
-import { ChatContextKeys } from '../common/chatContextKeys.js';
-// --- End Positron ---
+
 
 const gaugeBackground = registerColor('gauge.background', {
 	dark: inputValidationInfoBorder,
@@ -111,45 +105,7 @@ const defaultChat = {
 	manageOverageUrl: product.defaultChatAgent?.manageOverageUrl ?? '',
 };
 
-// --- Start Positron ---
-// This is a wrapper around the ChatStatus class
-// which creates a ChatStatus instance for each editor part (window)\
-// See src/vs/workbench/contrib/languageStatus/browser/languageStatus.ts for inspiration
 export class ChatStatusBarEntry extends Disposable implements IWorkbenchContribution {
-	static readonly ID = 'workbench.contrib.chatStatusBarEntry';
-
-	constructor(
-		@IEditorGroupsService private readonly editorGroupService: IEditorGroupsService,
-	) {
-		super();
-
-		for (const part of editorGroupService.parts) {
-			this.createChatStatus(part);
-		}
-
-		this._register(editorGroupService.onDidCreateAuxiliaryEditorPart(part => this.createChatStatus(part)));
-	}
-
-	private createChatStatus(part: IEditorPart): void {
-		const disposables = new DisposableStore();
-		this._register(
-			part.onWillDispose(() => {
-				if (!disposables.isDisposed) {
-					disposables.dispose();
-				}
-			})
-		);
-
-		const scopedInstantiationService = this.editorGroupService.getScopedInstantiationService(part);
-		disposables.add(scopedInstantiationService.createInstance(ChatStatus));
-	}
-}
-
-// Rename this class to avoid needing to modify other files that import it
-
-// export class ChatStatusBarEntry extends Disposable implements IWorkbenchContribution {
-export class ChatStatus extends Disposable {
-	// --- End Positron ---
 
 	static readonly ID = 'workbench.contrib.chatStatusBarEntry';
 
@@ -166,9 +122,7 @@ export class ChatStatus extends Disposable {
 		@IEditorService private readonly editorService: IEditorService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@IInlineCompletionsService private readonly completionsService: IInlineCompletionsService,
-		// --- Start Positron ---
-		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		// --- End Positron ---
+
 	) {
 		super();
 
@@ -177,22 +131,16 @@ export class ChatStatus extends Disposable {
 	}
 
 	private update(): void {
-		// --- Start Positron ---
-		// Remove the Chat status if the active editor is not a code editor
-		if (!this.shouldShowStatus()) {
+		if (!this.chatEntitlementService.sentiment.hidden) {
+			if (!this.entry) {
+				this.entry = this.statusbarService.addEntry(this.getEntryProps(), 'chat.statusBarEntry', StatusbarAlignment.RIGHT, 100.1);
+			} else {
+				this.entry.update(this.getEntryProps());
+			}
+		} else {
 			this.entry?.dispose();
 			this.entry = undefined;
-			return;
 		}
-
-		// We only need the part that displays the status. No need to hide it based on the chat entitlement setting the right context keys
-		// Removed outer if (!this.chatEntitlementService.sentiment.hidden) ...
-		if (!this.entry) {
-			this.entry = this.statusbarService.addEntry(this.getEntryProps(), 'chat.statusBarEntry', StatusbarAlignment.RIGHT, { location: { id: 'status.editor.mode', priority: 100.1 }, alignment: StatusbarAlignment.RIGHT });
-		} else {
-			this.entry.update(this.getEntryProps());
-		}
-		// --- End Positron ---
 	}
 
 	private registerListeners(): void {
@@ -208,14 +156,6 @@ export class ChatStatus extends Disposable {
 				this.update();
 			}
 		}));
-		// --- Start Positron ---
-		this._register(this.contextKeyService.onDidChangeContext(e => {
-			const expr = ChatContextKeys.inChatSession.isEqualTo(true);
-			if (e.affectsSome(new Set(expr.keys()))) {
-				this.update();
-			}
-		}));
-		// --- End Positron ---
 	}
 
 	private onDidActiveEditorChange(): void {
@@ -232,25 +172,11 @@ export class ChatStatus extends Disposable {
 		}
 	}
 
-	// --- Start Positron ---
-	private shouldShowStatus(): boolean {
-		// Hide the Chat status item if:
-		// - only plot or data explorer editors are open, and
-		// - the user is not in a chat session
-		const inChat = ChatContextKeys.inChatSession.getValue(this.contextKeyService);
-		const isEditor = !this.editorService.editors.every(editor => {
-			return editor.editorId === 'workbench.editor.positronPlots' ||
-				editor.editorId === 'workbench.editor.positronDataExplorer';
-		});
-		return inChat || isEditor;
-	}
-	// --- End Positron ---
+
 
 	private getEntryProps(): IStatusbarEntry {
-		// --- Start Positron ---
-		let text = '$(positron-assistant)';
-		let ariaLabel = localize('chatStatus', "Assistant Status");
-		// --- End Positron ---
+		let text = '$(copilot)';
+		let ariaLabel = localize('chatStatus', "Copilot Status");
 		let kind: StatusbarEntryKind | undefined;
 
 		if (isNewUser(this.chatEntitlementService)) {
@@ -322,11 +248,7 @@ export class ChatStatus extends Disposable {
 			text,
 			ariaLabel,
 			command: ShowTooltipCommand,
-			// --- Start Positron ---
-			// Do not show status in all windows; allows us to create a new status item
-			// for each window manually
-			// showInAllWindows: true,
-			// --- End Positron ---
+			showInAllWindows: true,
 			kind,
 			tooltip: { element: token => this.dashboard.value.show(token) }
 		};
@@ -397,11 +319,7 @@ class ChatStatusDashboard extends Disposable {
 	private readonly entryDisposables = this._register(new MutableDisposable());
 
 	constructor(
-		// --- Start Positron ---
-		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
-		@ILanguageModelsService private readonly languageModelsService: ILanguageModelsService,
-		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		// --- End Positron ---
+
 		@IChatEntitlementService private readonly chatEntitlementService: ChatEntitlementService,
 		@IChatStatusItemService private readonly chatStatusItemService: IChatStatusItemService,
 		@ICommandService private readonly commandService: ICommandService,
@@ -505,98 +423,12 @@ class ChatStatusDashboard extends Disposable {
 			}
 		}
 
-		// --- Start Positron ---
-		// Completion Providers
-		{
-			const entry = {
-				id: 'positron-assistant.completionProviders',
-				label: localize('completionProvidersLabel', "Completion Providers"),
-				description: '',
-				detail: '',
-			};
-			this.languageFeaturesService.inlineCompletionsProvider.allNoModel().forEach(provider => {
-				const name = provider.displayName;
-				if (name) {
-					// add an element to the container with the name
-					entry.description += `${name}\n`;
-				}
-			});
-
-			/*
-			 * Remove upstream code completion provider entry
-			 *
-			const chatSentiment = this.chatEntitlementService.sentiment;
-			addSeparator(localize('codeCompletions', "Code Completions"), chatSentiment.installed && !chatSentiment.disabled && !chatSentiment.untrusted ? toAction({
-				id: 'workbench.action.openChatSettings',
-				label: localize('settingsLabel', "Settings"),
-				tooltip: localize('settingsTooltip', "Open Settings"),
-				class: ThemeIcon.asClassName(Codicon.settingsGear),
-				run: () => this.runCommandAndClose(() => this.commandService.executeCommand('workbench.action.openSettings', { query: `@id:${defaultChat.completionsEnablementSetting} @id:${defaultChat.nextEditSuggestionsSetting}` })),
-			}) : undefined);
-			*/
-
-			if (entry.description.length === 0) {
-				entry.description = localize('noCompletionProviders', "No completion providers available");
-			}
-
-			const itemDisposables = disposables.add(new MutableDisposable());
-			const rendered = this.renderContributedChatStatusItem(entry);
-
-			itemDisposables.value = rendered.disposables;
-			this.element.appendChild(rendered.element);
-		}
-
-		// Provider token usage
-		{
-			const tokenEntry = {
-				id: 'positron-assistant.providerTokenUsage',
-				label: localize('providerTokenUsageLabel', "Provider Token Usage"),
-				description: '',
-				detail: '',
-			};
-
-			const providers = this.languageModelsService.getLanguageModelProviders();
-			const details = new Array<HTMLSpanElement>();
-			providers.forEach(provider => {
-				const inputCount = this.contextKeyService.getContextKeyValue(`positron-assistant.${provider.id}.tokenCount.input`);
-				const outputCount = this.contextKeyService.getContextKeyValue(`positron-assistant.${provider.id}.tokenCount.output`);
-				if (typeof inputCount === 'number' && typeof outputCount === 'number') {
-					const span = document.createElement('div');
-
-					span.innerText = `${provider.displayName}: ↑${inputCount} ↓${outputCount}`;
-					details.push(span);
-				} else {
-					// add an element to the container with the name and a message
-					const span = document.createElement('div');
-					span.innerText = `${provider.displayName}: ${localize('noTokenUsage', "No token usage available")}`;
-					details.push(span);
-				}
-			});
-
-			if (providers.length === 0) {
-				tokenEntry.description = localize('noProviderTokenUsage', "No provider token usage available");
-			}
-
-			const itemDisposables = disposables.add(new MutableDisposable());
-			const rendered = this.renderContributedChatStatusItem(tokenEntry);
-
-			itemDisposables.value = rendered.disposables;
-			this.element.appendChild(rendered.element);
-			for (const detail of details) {
-				rendered.element.appendChild(detail);
-			}
-		}
-
-		/*
 		// Settings
-		// {
-		// 	addSeparator(localize('settingsTitle', "Settings"));
+		{
+			addSeparator(localize('settingsTitle', "Settings"));
 
-		// 	this.createSettings(this.element, disposables);
-		// }
-
-
-		// Remove Copilot
+			this.createSettings(this.element, disposables);
+		}
 
 		// Completions Snooze
 		if (canUseCopilot(this.chatEntitlementService)) {
@@ -637,8 +469,6 @@ class ChatStatusDashboard extends Disposable {
 				disposables.add(button.onDidClick(() => this.runCommandAndClose('workbench.action.chat.triggerSetup')));
 			}
 		}
-		*/
-		// --- End Positron ---
 
 		return this.element;
 	}
@@ -769,9 +599,6 @@ class ChatStatusDashboard extends Disposable {
 		return update;
 	}
 
-	// --- Start Positron ---
-	// Removed Settings section since it doesn't change Positron Assistant
-	// @ts-ignore
 	private createSettings(container: HTMLElement, disposables: DisposableStore): HTMLElement {
 		const modeId = this.editorService.activeTextEditorLanguageId;
 		const settings = container.appendChild($('div.settings'));
@@ -795,7 +622,6 @@ class ChatStatusDashboard extends Disposable {
 
 		return settings;
 	}
-	// --- End Positron ---
 
 	private createSetting(container: HTMLElement, settingIdsToReEvaluate: string[], label: string, accessor: ISettingsAccessor, disposables: DisposableStore): Checkbox {
 		const checkbox = disposables.add(new Checkbox(label, Boolean(accessor.readSetting()), { ...defaultCheckboxStyles, hoverDelegate: nativeHoverDelegate }));
@@ -898,10 +724,7 @@ class ChatStatusDashboard extends Disposable {
 		}));
 	}
 
-	// --- Start Positron ---
-	// Made this method public to avoid unused private method warning
-	// --- End Positron ---
-	public createCompletionsSnooze(container: HTMLElement, label: string, disposables: DisposableStore): void {
+	private createCompletionsSnooze(container: HTMLElement, label: string, disposables: DisposableStore): void {
 		const isEnabled = () => {
 			const completionsEnabled = isCompletionsEnabled(this.configurationService);
 			const completionsEnabledActiveLanguage = isCompletionsEnabled(this.configurationService, this.editorService.activeTextEditorLanguageId);

@@ -46,7 +46,7 @@ import { ILanguageRuntimeService } from '../../workbench/services/languageRuntim
 import { IExecutionHistoryService } from '../../workbench/services/positronHistory/common/executionHistoryService.js';
 import { IPositronModalDialogsService } from '../../workbench/services/positronModalDialogs/common/positronModalDialogs.js';
 import { IPositronConsoleService } from '../../workbench/services/positronConsole/browser/interfaces/positronConsoleService.js';
-import { IPositronAssistantService } from '../../workbench/contrib/positronAssistant/common/interfaces/positronAssistantService.js';
+
 import { IPositronTopActionBarService } from '../../workbench/services/positronTopActionBar/browser/positronTopActionBarService.js';
 import { IPositronVariablesService } from '../../workbench/services/positronVariables/common/interfaces/positronVariablesService.js';
 import { IPositronConnectionsService } from '../../workbench/services/positronConnections/common/interfaces/positronConnectionsService.js';
@@ -104,7 +104,6 @@ export class PositronReactServices {
 		@INotificationService public readonly notificationService: INotificationService,
 		@IOpenerService public readonly openerService: IOpenerService,
 		@IPathService public readonly pathService: IPathService,
-		@IPositronAssistantService public readonly positronAssistantService: IPositronAssistantService,
 		@IPositronConnectionsService public readonly positronConnectionsService: IPositronConnectionsService,
 		@IPositronConsoleService public readonly positronConsoleService: IPositronConsoleService,
 		@IPositronDataExplorerService public readonly positronDataExplorerService: IPositronDataExplorerService,

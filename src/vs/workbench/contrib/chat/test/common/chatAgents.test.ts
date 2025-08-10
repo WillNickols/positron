@@ -41,17 +41,10 @@ suite('ChatAgents', function () {
 
 	let chatAgentService: ChatAgentService;
 	let contextKeyService: TestingContextKeyService;
-	// --- Start Positron ---
-	let configurationService: TestConfigurationService;
-	// --- End Positron ---
 	setup(() => {
 		contextKeyService = new TestingContextKeyService();
-		// --- Start Positron ---
-		// Add configuration service to chat
-		configurationService = new TestConfigurationService();
-		configurationService.setUserConfiguration('positron.assistant.enable', true);
+		const configurationService = new TestConfigurationService();
 		chatAgentService = store.add(new ChatAgentService(contextKeyService, configurationService));
-		// --- End Positron ---
 	});
 
 	test('registerAgent', async () => {

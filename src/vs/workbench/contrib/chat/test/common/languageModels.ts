@@ -9,10 +9,7 @@ import { Disposable, IDisposable } from '../../../../../base/common/lifecycle.js
 import { ExtensionIdentifier } from '../../../../../platform/extensions/common/extensions.js';
 import { IChatMessage, ILanguageModelChat, ILanguageModelChatMetadata, ILanguageModelChatResponse, ILanguageModelChatSelector, ILanguageModelsService } from '../../common/languageModels.js';
 
-// --- Start Positron ---
-// eslint-disable-next-line no-duplicate-imports
-import { IPositronChatProvider } from '../../common/languageModels.js';
-// --- End Positron ---
+
 
 export class NullLanguageModelsService implements ILanguageModelsService {
 
@@ -44,20 +41,5 @@ export class NullLanguageModelsService implements ILanguageModelsService {
 		throw new Error('Method not implemented.');
 	}
 
-	// --- Start Positron ---
-	// Add Positron-specific methods
-	get currentProvider(): IPositronChatProvider | undefined {
-		throw new Error('Method not implemented.');
-	}
-	set currentProvider(provider: IPositronChatProvider | undefined) {
-		throw new Error('Method not implemented.');
-	}
-	onDidChangeCurrentProvider: Event<IPositronChatProvider | undefined> = Event.None;
-	getLanguageModelIdsForCurrentProvider(): string[] {
-		throw new Error('Method not implemented.');
-	}
-	getLanguageModelProviders(): IPositronChatProvider[] {
-		throw new Error('Method not implemented.');
-	}
-	// --- End Positron ---
+
 }

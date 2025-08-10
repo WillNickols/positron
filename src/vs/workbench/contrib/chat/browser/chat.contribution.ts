@@ -115,7 +115,6 @@ import { registerLanguageModelActions } from './actions/chatLanguageModelActions
 import { PromptUrlHandler } from './promptSyntax/promptUrlHandler.js';
 
 // --- Start Positron ---
-import { PositronBuiltinToolsContribution } from './tools/tools.js';
 import { ChatRuntimeSessionContextContribution } from './contrib/chatRuntimeSessionContext.js';
 // --- End Positron ---
 
@@ -734,7 +733,6 @@ registerWorkbenchContribution2(ChatResponseResourceFileSystemProvider.ID, ChatRe
 registerWorkbenchContribution2(PromptUrlHandler.ID, PromptUrlHandler, WorkbenchPhase.BlockRestore);
 
 // --- Start Positron ---
-registerWorkbenchContribution2(PositronBuiltinToolsContribution.ID, PositronBuiltinToolsContribution, WorkbenchPhase.Eventually);
 registerWorkbenchContribution2(ChatRuntimeSessionContextContribution.ID, ChatRuntimeSessionContextContribution, WorkbenchPhase.Eventually);
 // --- End Positron ---
 

@@ -6,15 +6,14 @@
 import { IDisposable } from '../../../../base/common/lifecycle.js';
 import { ILanguageRuntimeInfo, ILanguageRuntimeMetadata, RuntimeCodeExecutionMode, RuntimeCodeFragmentStatus, RuntimeErrorBehavior, RuntimeState, ILanguageRuntimeMessage, ILanguageRuntimeExit, RuntimeExitReason, LanguageRuntimeSessionMode } from '../../../services/languageRuntime/common/languageRuntimeService.js';
 import { createProxyIdentifier, IRPCProtocol, SerializableObjectWithBuffers } from '../../../services/extensions/common/proxyIdentifier.js';
-import { MainContext, IWebviewPortMapping, WebviewExtensionDescription, IChatProgressDto, ExtHostQuickOpenShape } from '../extHost.protocol.js';
+import { MainContext, IWebviewPortMapping, WebviewExtensionDescription, ExtHostQuickOpenShape } from '../extHost.protocol.js';
 import { URI, UriComponents } from '../../../../base/common/uri.js';
 import { IEditorContext } from '../../../services/frontendMethods/common/editorContext.js';
 import { RuntimeClientType, LanguageRuntimeSessionChannel } from './extHostTypes.positron.js';
 import { EnvironmentVariableAction, LanguageRuntimeDynState, RuntimeSessionMetadata } from 'positron';
 import { IDriverMetadata, Input } from '../../../services/positronConnections/common/interfaces/positronConnectionsDriver.js';
 import { IAvailableDriverMethods } from '../../browser/positron/mainThreadConnections.js';
-import { IChatRequestData, IPositronChatContext, IPositronLanguageModelConfig, IPositronLanguageModelSource } from '../../../contrib/positronAssistant/common/interfaces/positronAssistantService.js';
-import { IChatAgentData } from '../../../contrib/chat/common/chatAgents.js';
+
 import { PlotRenderSettings } from '../../../services/positronPlots/common/positronPlots.js';
 import { QueryTableSummaryResult, Variable } from '../../../services/languageRuntime/common/positronVariablesComm.js';
 import { ILanguageRuntimeCodeExecutedEvent } from '../../../services/positronConsole/common/positronConsoleCodeExecution.js';
@@ -146,24 +145,7 @@ export interface MainThreadEnvironmentShape extends IDisposable {
 
 export interface ExtHostEnvironmentShape { }
 
-export interface MainThreadAiFeaturesShape {
-	$registerChatAgent(agentData: IChatAgentData): Thenable<void>;
-	$unregisterChatAgent(id: string): void;
-	$getCurrentPlotUri(): Promise<string | undefined>;
-	$getPositronChatContext(request: IChatRequestData): Thenable<IPositronChatContext>;
-	$responseProgress(sessionId: string, dto: IChatProgressDto): void;
-	$languageModelConfig(id: string, sources: IPositronLanguageModelSource[]): Thenable<void>;
-	$getSupportedProviders(): Thenable<string[]>;
-	$getChatExport(): Thenable<object | undefined>;
-	$addLanguageModelConfig(source: IPositronLanguageModelSource): void;
-	$removeLanguageModelConfig(source: IPositronLanguageModelSource): void;
-	$areCompletionsEnabled(file: UriComponents): Thenable<boolean>;
-}
 
-export interface ExtHostAiFeaturesShape {
-	$responseLanguageModelConfig(id: string, config: IPositronLanguageModelConfig, action: string): Thenable<void>;
-	$onCompleteLanguageModelConfig(id: string): void;
-}
 
 export interface MainThreadPlotsServiceShape {
 	$getPlotsRenderSettings(): Promise<PlotRenderSettings>;
@@ -247,7 +229,7 @@ export const ExtHostPositronContext = {
 	ExtHostMethods: createProxyIdentifier<ExtHostMethodsShape>('ExtHostMethods'),
 	ExtHostEnvironment: createProxyIdentifier<ExtHostEnvironmentShape>('ExtHostEnvironment'),
 	ExtHostConnections: createProxyIdentifier<ExtHostConnectionsShape>('ExtHostConnections'),
-	ExtHostAiFeatures: createProxyIdentifier<ExtHostAiFeaturesShape>('ExtHostAiFeatures'),
+
 	ExtHostQuickOpen: createProxyIdentifier<ExtHostQuickOpenShape>('ExtHostQuickOpen'),
 	ExtHostPlotsService: createProxyIdentifier<ExtHostPlotsServiceShape>('ExtHostPlotsService'),
 };
@@ -261,6 +243,6 @@ export const MainPositronContext = {
 	MainThreadContextKeyService: createProxyIdentifier<MainThreadContextKeyServiceShape>('MainThreadContextKeyService'),
 	MainThreadMethods: createProxyIdentifier<MainThreadMethodsShape>('MainThreadMethods'),
 	MainThreadConnections: createProxyIdentifier<MainThreadConnectionsShape>('MainThreadConnections'),
-	MainThreadAiFeatures: createProxyIdentifier<MainThreadAiFeaturesShape>('MainThreadAiFeatures'),
+
 	MainThreadPlotsService: createProxyIdentifier<MainThreadPlotsServiceShape>('MainThreadPlotsService'),
 };

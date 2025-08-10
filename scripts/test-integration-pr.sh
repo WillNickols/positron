@@ -40,11 +40,7 @@ else
 	kill_app() { killall $INTEGRATION_TEST_APP_NAME || true; }
 fi
 
-echo
-echo "### Positron Assistant tests"
-echo
-npm run test-extension -- -l positron-assistant
-kill_app
+
 
 echo
 echo "### Positron Code Cells tests"

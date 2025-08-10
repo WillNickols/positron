@@ -12,7 +12,6 @@ const dirs = [
 	'extensions',
 	// --- Start Positron ---
 	'extensions/open-remote-ssh',
-	'extensions/positron-assistant',
 	'extensions/positron-code-cells',
 	'extensions/positron-connections',
 	'extensions/positron-duckdb',

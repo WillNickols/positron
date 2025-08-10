@@ -37,9 +37,7 @@ import { CHAT_SIDEBAR_PANEL_ID, ChatViewPane } from './chatViewPane.js';
 const chatViewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).registerViewContainer({
 	id: CHAT_SIDEBAR_PANEL_ID,
 	title: localize2('chat.viewContainer.label', "Chat"),
-	// --- Start Positron ---
-	icon: Codicon.positronAssistant,
-	// --- End Positron ---
+	icon: Codicon.copilot,
 	ctorDescriptor: new SyncDescriptor(ViewPaneContainer, [CHAT_SIDEBAR_PANEL_ID, { mergeViewWithContainerWhenSingleView: true }]),
 	storageId: CHAT_SIDEBAR_PANEL_ID,
 	hideIfEmpty: true,

@@ -31,9 +31,7 @@ import { ExtHostMethods } from './extHostMethods.js';
 import { ExtHostEditors } from '../extHostTextEditors.js';
 import { UiFrontendRequest } from '../../../services/languageRuntime/common/positronUiComm.js';
 import { ExtHostConnections } from './extHostConnections.js';
-import { ExtHostAiFeatures } from './extHostAiFeatures.js';
-import { IToolInvocationContext } from '../../../contrib/chat/common/languageModelToolsService.js';
-import { IPositronLanguageModelSource } from '../../../contrib/positronAssistant/common/interfaces/positronAssistantService.js';
+
 import { ExtHostEnvironment } from './extHostEnvironment.js';
 import { ExtHostPlotsService } from './extHostPlotsService.js';
 
@@ -72,7 +70,7 @@ export function createPositronApiFactoryAndRegisterActors(accessor: ServicesAcce
 	const extHostDocuments: ExtHostDocuments = rpcProtocol.getRaw(ExtHostContext.ExtHostDocuments);
 	const extHostQuickOpen = rpcProtocol.set(ExtHostPositronContext.ExtHostQuickOpen, createExtHostQuickOpen(rpcProtocol, extHostWorkspace, extHostCommands));
 	const extHostLanguageRuntime = rpcProtocol.set(ExtHostPositronContext.ExtHostLanguageRuntime, new ExtHostLanguageRuntime(rpcProtocol, extHostLogService));
-	const extHostAiFeatures = rpcProtocol.set(ExtHostPositronContext.ExtHostAiFeatures, new ExtHostAiFeatures(rpcProtocol, extHostCommands));
+
 	const extHostPreviewPanels = rpcProtocol.set(ExtHostPositronContext.ExtHostPreviewPanel, new ExtHostPreviewPanels(rpcProtocol, extHostWebviews, extHostWorkspace));
 	const extHostModalDialogs = rpcProtocol.set(ExtHostPositronContext.ExtHostModalDialogs, new ExtHostModalDialogs(rpcProtocol));
 	const extHostContextKeyService = rpcProtocol.set(ExtHostPositronContext.ExtHostContextKeyService, new ExtHostContextKeyService(rpcProtocol));
@@ -255,39 +253,7 @@ export function createPositronApiFactoryAndRegisterActors(accessor: ServicesAcce
 			}
 		};
 
-		const ai: typeof positron.ai = {
-			getCurrentPlotUri(): Thenable<string | undefined> {
-				return extHostAiFeatures.getCurrentPlotUri();
-			},
-			showLanguageModelConfig(sources: positron.ai.LanguageModelSource[], onAction: (config: positron.ai.LanguageModelConfig, action: string) => Thenable<void>): Thenable<void> {
-				return extHostAiFeatures.showLanguageModelConfig(sources, onAction);
-			},
-			registerChatAgent(agentData: positron.ai.ChatAgentData): Thenable<vscode.Disposable> {
-				return extHostAiFeatures.registerChatAgent(extension, agentData);
-			},
-			responseProgress(token: unknown, part: vscode.ChatResponsePart | vscode.ChatResponseTextEditPart | vscode.ChatResponseConfirmationPart): void {
-				const context = token as IToolInvocationContext;
-				return extHostAiFeatures.responseProgress(context, part);
-			},
-			getPositronChatContext(request: vscode.ChatRequest): Thenable<positron.ai.ChatContext> {
-				return extHostAiFeatures.getPositronChatContext(request);
-			},
-			getSupportedProviders(): Thenable<string[]> {
-				return extHostAiFeatures.getSupportedProviders();
-			},
-			getChatExport(): Thenable<object | undefined> {
-				return extHostAiFeatures.getChatExport();
-			},
-			addLanguageModelConfig(source: IPositronLanguageModelSource): void {
-				return extHostAiFeatures.addLanguageModelConfig(source);
-			},
-			removeLanguageModelConfig(source: IPositronLanguageModelSource): void {
-				return extHostAiFeatures.removeLanguageModelConfig(source);
-			},
-			areCompletionsEnabled(file: vscode.Uri): Promise<boolean> {
-				return extHostAiFeatures.areCompletionsEnabled(file);
-			},
-		};
+
 
 		// --- End Positron ---
 
@@ -300,12 +266,8 @@ export function createPositronApiFactoryAndRegisterActors(accessor: ServicesAcce
 			methods,
 			environment,
 			connections,
-			ai,
 			CodeAttributionSource: extHostTypes.CodeAttributionSource,
-			PositronLanguageModelType: extHostTypes.PositronLanguageModelType,
-			PositronChatAgentLocation: extHostTypes.PositronChatAgentLocation,
 			PositronOutputLocation: extHostTypes.PositronOutputLocation,
-			PositronChatMode: extHostTypes.PositronChatMode,
 			RuntimeClientType: extHostTypes.RuntimeClientType,
 			RuntimeClientState: extHostTypes.RuntimeClientState,
 			RuntimeExitReason: extHostTypes.RuntimeExitReason,

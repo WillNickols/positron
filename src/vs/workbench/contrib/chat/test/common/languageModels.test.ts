@@ -15,10 +15,7 @@ import { IExtensionService, nullExtensionDescription } from '../../../../service
 import { ExtensionsRegistry } from '../../../../services/extensions/common/extensionsRegistry.js';
 import { MockContextKeyService } from '../../../../../platform/keybinding/test/common/mockKeybindingService.js';
 import { DEFAULT_MODEL_PICKER_CATEGORY } from '../../common/modelPicker/modelPickerWidget.js';
-// --- Start Positron ---
-// The storage service is needed for Positron AI provider additions.
-import { TestStorageService } from '../../../../test/common/workbenchTestServices.js';
-// --- End Positron ---
+
 
 suite('LanguageModels', function () {
 
@@ -37,11 +34,7 @@ suite('LanguageModels', function () {
 				}
 			},
 			new NullLogService(),
-			// --- Start Positron ---
-			// Add the storage service for Positron AI provider additions.
 			new MockContextKeyService(),
-			new TestStorageService(),
-			// --- End Positron ---
 		);
 
 		const ext = ExtensionsRegistry.getExtensionPoints().find(e => e.name === languageModelExtensionPoint.name)!;

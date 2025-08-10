@@ -299,19 +299,8 @@ export class ChatAgentService extends Disposable implements IChatAgentService {
 		let extensionAgentRegistered = false;
 		let defaultAgentRegistered = false;
 		let toolsAgentRegistered = false;
-		// --- Start Positron ---
-		let testAgentRegistered = false;
-		// --- End Positron ---
 		for (const agent of this.getAgents()) {
-			// --- Start Positron ---
-			if (agent.extensionId.value === 'vscode.vscode-api-tests') {
-				testAgentRegistered = true;
-			}
-			// --- End Positron ---
 			if (agent.isDefault) {
-				// --- Start Positron ---
-				defaultAgentRegistered = true;
-				// --- End Positron ---
 				if (!agent.isCore) {
 					extensionAgentRegistered = true;
 				}
@@ -325,14 +314,7 @@ export class ChatAgentService extends Disposable implements IChatAgentService {
 			}
 		}
 		this._editingAgentRegistered.set(editingAgentRegistered);
-		// --- Start Positron ---
-		// Do not register default agents when Assistant is disabled, except for
-		// the API test agent from upstream.
-		// this._defaultAgentRegistered.set(defaultAgentRegistered);
-		if (testAgentRegistered || this.configurationService.getValue('positron.assistant.enable')) {
-			this._defaultAgentRegistered.set(defaultAgentRegistered);
-		}
-		// --- End Positron ---
+		this._defaultAgentRegistered.set(defaultAgentRegistered);
 		this._extensionAgentRegistered.set(extensionAgentRegistered);
 		if (toolsAgentRegistered !== this._hasToolsAgent) {
 			this._hasToolsAgent = toolsAgentRegistered;
