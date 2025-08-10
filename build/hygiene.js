@@ -37,6 +37,12 @@ const positCopyrightHeaderLinesHash = [
 	/# Licensed under the Elastic License 2\.0\. See LICENSE\.txt for license information\.\s*/g,
 	/# ---------------------------------------------------------------------------------------------\s*/g,
 ];
+const lotasCopyrightHeaderLines = [
+	/\/\*---------------------------------------------------------------------------------------------\s*/g,
+	/ \*  Copyright \([cC]{1}\)\s?(20\d{2})?(-20\d{2})? by Lotas Inc\.\s*/g,
+	/ \*  Licensed under the AGPL-3\.0 License\. See License\.txt in the project root for license information\.\s*/g,
+	/ \*--------------------------------------------------------------------------------------------\*\/\s*/g,
+];
 // --- End Positron ---
 
 // --- Start Positron ---
@@ -158,7 +164,8 @@ function hygiene(some, linting = true, secrets = true) {
 
 		if (!(matchHeaderLines(copyrightHeaderLines) ||
 			regexMatchHeaderLines(positCopyrightHeaderLines) ||
-			regexMatchHeaderLines(positCopyrightHeaderLinesHash))) {
+			regexMatchHeaderLines(positCopyrightHeaderLinesHash) ||
+			regexMatchHeaderLines(lotasCopyrightHeaderLines))) {
 			console.error(file.relative + ': ' + 'Missing or bad copyright statement'.magenta);
 			errorCount++;
 		}

@@ -1,0 +1,145 @@
+{
+  "name": "poisson-ai",
+  "displayName": "Poisson AI",
+  "description": "AI assistant powered by Rao backend for intelligent coding assistance",
+  "version": "0.1.0",
+  "publisher": "lotas",
+  "license": "AGPL-3.0",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Machine Learning",
+    "Education",
+    "Other"
+  ],
+  "keywords": [
+    "ai",
+    "assistant",
+    "coding",
+    "anthropic",
+    "openai"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "views": {
+      "activitybar": [
+        {
+          "id": "poissonAi",
+          "name": "Poisson AI",
+          "when": "config.poissonAi.enabled"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "poissonAi",
+          "title": "Poisson AI",
+          "icon": "$(robot)"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "poissonAi",
+        "contents": "Welcome to Poisson AI Assistant.\n[Open Settings](command:poisson.ai.openSettings)\n[New Conversation](command:poisson.ai.newConversation)"
+      }
+    ],
+    "commands": [
+      {
+        "command": "poisson.ai.newConversation",
+        "title": "Poisson AI: New Conversation",
+        "icon": "$(add)"
+      },
+      {
+        "command": "poisson.ai.sendMessage",
+        "title": "Poisson AI: Send Message"
+      },
+      {
+        "command": "poisson.ai.addFileContext",
+        "title": "Poisson AI: Add File to Context",
+        "icon": "$(file-add)"
+      },
+      {
+        "command": "poisson.ai.clearContext",
+        "title": "Poisson AI: Clear Context"
+      },
+      {
+        "command": "poisson.ai.openSettings",
+        "title": "Poisson AI: Open Settings",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "poisson.ai.resetEnvironment",
+        "title": "Poisson AI: Reset Backend Environment"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "poisson.ai.sendMessage",
+        "key": "ctrl+enter",
+        "when": "focusedView == poissonAi"
+      }
+    ],
+    "configuration": {
+      "title": "Poisson AI",
+      "properties": {
+        "poissonAi.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Poisson AI assistant"
+        },
+        "poissonAi.backend.environment": {
+          "type": "string",
+          "enum": ["auto", "local", "production"],
+          "default": "auto",
+          "description": "Backend environment to use"
+        },
+        "poissonAi.backend.url": {
+          "type": "string",
+          "default": "",
+          "description": "Custom backend URL (overrides environment detection)"
+        },
+        "poissonAi.automation.autoAcceptEdits": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically accept file edits"
+        },
+        "poissonAi.automation.autoAcceptConsole": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically accept console commands"
+        },
+        "poissonAi.automation.autoAcceptTerminal": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically accept terminal commands"
+        },
+        "poissonAi.ui.fontSize": {
+          "type": "number",
+          "default": 14,
+          "description": "Font size for Poisson AI assistant interface"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^18.x",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2",
+    "@types/node-fetch": "^2.6.7",
+    "form-data": "^4.0.0"
+  }
+}
